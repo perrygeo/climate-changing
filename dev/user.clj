@@ -1,6 +1,6 @@
 (ns user
   (:require
-   [climate-changed.backend.main :as main]
+   [climate-changing.backend.main :as main]
    [clojure.string :as str]
    [integrant.core :as ig]
    [integrant.repl]
@@ -62,7 +62,7 @@
   (symbol (namespace ::x))
   (->> (all-ns)
        (map ns-name)
-       (filter #(str/starts-with? %1 "climate-changed"))
+       (filter #(str/starts-with? %1 "climate-changing"))
        (sort))
 
   ;; REPL mgmt

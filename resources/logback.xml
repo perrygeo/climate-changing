@@ -7,7 +7,7 @@
 
   <!-- Jetty startup/thread-lifecycle chatter isn't useful in prod; only
        WARN and above (real problems) get through. Request logging is done by
-       climate-changed's own middleware instead. -->
+       climate-changing's own middleware instead. -->
   <logger name="org.eclipse.jetty" level="WARN"/>
 
   <!-- Hadoop's CodecPool logs at INFO whenever it allocates a fresh gzip

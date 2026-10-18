@@ -1,7 +1,7 @@
 (ns build
   (:require [clojure.tools.build.api :as b]))
 
-(def lib 'climate-changed/climate-changed)
+(def lib 'climate-changing/climate-changing)
 (def version (or (System/getenv "VERSION") "0.1.0-SNAPSHOT"))
 (def class-dir "target/classes")
 
@@ -17,10 +17,10 @@
   bundled Rust era5-timeseries binary. Run `make release-client` and
   `make release-era5-timeseries` first (or `make release` for everything)."
   [_]
-  (println "\n=== Building climate-changed uberjar ===\n")
+  (println "\n=== Building climate-changing uberjar ===\n")
 
   (let [basis     (b/create-basis {:aliases [:build]})
-        uber-file (format "target/climate-changed-%s-%s.jar" version (build-stamp))]
+        uber-file (format "target/climate-changing-%s-%s.jar" version (build-stamp))]
 
     ;; Check that client build exists
     (let [client-js "resources/public/js/main.js"]
@@ -57,6 +57,6 @@
     (b/uber {:class-dir class-dir
              :uber-file uber-file
              :basis     basis
-             :main      'climate-changed.backend.main})
+             :main      'climate-changing.backend.main})
 
     (println "\n=== Uberjar built:" uber-file "===")))

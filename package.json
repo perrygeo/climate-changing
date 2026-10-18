@@ -1,5 +1,5 @@
 {
-  "name": "climate-changed",
+  "name": "climate-changing",
   "dependencies": {
     "create-react-class": "^15.7.0",
     "d3-array": "^3.2.4",

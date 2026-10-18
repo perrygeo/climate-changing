@@ -68,16 +68,17 @@ variable "data_bucket_name" {
 variable "domain_name" {
   description = "Custom domain to serve the app from."
   type        = string
-  default     = "climate-changed.org"
+  default     = "climate-changing.org"
 }
 
 variable "enable_custom_domain" {
   description = <<-EOT
     Whether to attach the custom domain + ACM certificate to CloudFront.
 
-    Leave this false for the first `terraform apply` so you get a working
-    *.cloudfront.net URL immediately. Then request/validate the certificate
-    (see README), set this to true, and apply again to serve climate-changed.org.
+    Leave this false for the bootstrap `terraform apply` so you get a working
+    *.cloudfront.net URL immediately. Then set this to true (with `domain_name`)
+    and apply again to request the certificate; the apply pauses until the DNS
+    validation record is added (see README).
   EOT
   type        = bool
   default     = false

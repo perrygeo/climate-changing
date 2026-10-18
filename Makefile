@@ -65,7 +65,7 @@ PROD_DIR := /var/lib/climate-changed
 SSH := ssh -o StrictHostKeyChecking=accept-new $(PROD_USER)@$(PROD_IP)
 
 deploy:
-	@JAR=$$(ls -t target/climate-changed-*.jar 2>/dev/null | head -n1); \
+	@JAR=$$(ls -t target/climate-changing-*.jar 2>/dev/null | head -n1); \
 	if [ -z "$$JAR" ]; then \
 		echo "No uberjar found in target/. Run 'make release' first." >&2; \
 		exit 1; \

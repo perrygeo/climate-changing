@@ -5,7 +5,7 @@
 (def version (or (System/getenv "VERSION") "0.1.0-SNAPSHOT"))
 
 (defn- base-opts [language source-paths output-path]
-  {:name         "climate-changed"
+  {:name         "climate-changing"
    :description  "Full-stack application to analyze ERA5 weather data timeseries for select locations."
    :version      version
    :language     language

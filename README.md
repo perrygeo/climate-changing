@@ -1,4 +1,4 @@
-# Climate Changed
+# Climate Changing
 
 A fullstack application to analyze ERA5 weather data timeseries for select locations.
 
@@ -12,10 +12,10 @@ Key source directories
  dev                                          ;; utils for local development
  infra                                        ;; NixOS and terraform for prod deployment
  resources                                    ;; static files shipped with release
- src/clj/climate_changed/backend/             ;; web server
- src/clj/climate_changed/era5/                ;; core weather data actions
- src/cljc/climate_changed/                    ;; shared utils, common math, clj/cljs agnostic
- src/cljs/climate_changed/frontend/           ;; interactive web map application
+ src/clj/climate_changing/backend/             ;; web server
+ src/clj/climate_changing/era5/                ;; core weather data actions
+ src/cljc/climate_changing/                    ;; shared utils, common math, clj/cljs agnostic
+ src/cljs/climate_changing/frontend/           ;; interactive web map application
  src/rs/era5-timeseries/                      ;; rust command line utility for fetching ERA5
  test                                         ;; unit/integration tests
 ```
@@ -83,12 +83,12 @@ AWS infrastructure is defined with Terraform in [`infra/terraform/`](infra/terra
 * S3 bucket to hold the timeseries data
 
 See [`infra/README.md`](infra/terraform/README.md) for how to run
-Terraform and how to (manually) configure DNS to point `climate-changed.org` at
+Terraform and how to (manually) configure DNS to point `climate-changing.org` at
 the CloudFront distribution.
 
 To verify, SSH into the ec2, run something on port 9000
 (e.g. `nix-shell -p python3 --run 'python3 -m http.server 9000'`), and see the
-results at `climate-changed.org`
+results at `climate-changing.org`
 
 ### Systemd
 The files live in `/var/lib/climate-changed/` on the live server.

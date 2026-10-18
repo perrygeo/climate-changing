@@ -18,6 +18,8 @@ ssh_allowed_cidr = "203.0.113.7/32"
 # Must be globally unique across all of S3.
 data_bucket_name = "climate-changed-timeseries"
 
-# Leave false for the first apply. Flip to true after the ACM cert is validated.
+# Leave false for the bootstrap apply so you get a working *.cloudfront.net URL.
+# Then set this to true (with domain_name) to request the ACM cert; the apply
+# pauses until you add the DNS validation record (see infra/README.md Step 2).
 enable_custom_domain = false
-domain_name          = "climate-changed.org"
+domain_name          = "climate-changing.org"

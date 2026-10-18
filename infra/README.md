@@ -99,7 +99,7 @@ To apply configuration changes:
     nixos-rebuild switch --flake .#app --target-host root@<instance_public_ip>
   ```
 
-## Step 2 - Attach climate-changed.org
+## Step 2 - Attach climate-changing.org
 
 CloudFront needs an ACM certificate (in `us-east-1`) for the custom domain.
 
@@ -108,7 +108,7 @@ CloudFront needs an ACM certificate (in `us-east-1`) for the custom domain.
    ```hcl
    # terraform.tfvars
    enable_custom_domain = true
-   domain_name          = "climate-changed.org"
+   domain_name          = "climate-changing.org"
    ```
 
    ```bash
@@ -125,22 +125,22 @@ CloudFront needs an ACM certificate (in `us-east-1`) for the custom domain.
    with the `name` and `value` from `acm_validation_records`. Once it
    propagates, AWS validates the cert and `terraform apply` completes.
 
-3. **Manually point climate-changed.org at CloudFront.** Use the
+3. **Manually point climate-changing.org at CloudFront.** Use the
    `cloudfront_domain_name` output as the target:
 
    - **Route 53 (recommended for an apex domain):** create an **A – Alias**
-     record for `climate-changed.org` targeting the CloudFront distribution.
+     record for `climate-changing.org` targeting the CloudFront distribution.
      (Alias records can sit at the zone apex; a plain CNAME cannot.)
    - **Other registrars:** apex `CNAME` is not valid DNS. Either use a registrar
      that supports `ALIAS`/`ANAME` flattening pointing to
-     `<cloudfront_domain_name>`, or serve from `www.climate-changed.org` via a
+     `<cloudfront_domain_name>`, or serve from `www.climate-changing.org` via a
      `CNAME` to `<cloudfront_domain_name>` and redirect the apex.
 
 Here's how it looks on cloudflare
 
 ```
 ;;
-;; Domain:     climate-changed.org.
+;; Domain:     climate-changing.org.
 ;; Exported:   2026-09-30 21:14:32
 ;;
 ;; This file is intended for use for informational and archival
@@ -165,22 +165,22 @@ Here's how it looks on cloudflare
 ;;
 ;; Use at your own risk.
 ;; SOA Record
-climate-changed.org	3600	IN	SOA	justin.ns.cloudflare.com. dns.cloudflare.com. 2054246947 10000 2400 604800 3600
+climate-changing.org	3600	IN	SOA	justin.ns.cloudflare.com. dns.cloudflare.com. 2054246947 10000 2400 604800 3600
 
 ;; NS Records
-climate-changed.org.	86400	IN	NS	justin.ns.cloudflare.com.
-climate-changed.org.	86400	IN	NS	mimi.ns.cloudflare.com.
+climate-changing.org.	86400	IN	NS	justin.ns.cloudflare.com.
+climate-changing.org.	86400	IN	NS	mimi.ns.cloudflare.com.
 
 ;; CNAME Records
-_08fa4616a889452f49bd90a34abed0d5.climate-changed.org.	1	IN	CNAME	_863c7b2352825c1264895f12ff99fc2b.wzccmgtwzk.acm-validations.aws. ; cf_tags=cf-proxied:false
-climate-changed.org.	1	IN	CNAME	d6afen5o55kcs.cloudfront.net. ; cf_tags=cf-proxied:false
-www.climate-changed.org.	1	IN	CNAME	d6afen5o55kcs.cloudfront.net. ; cf_tags=cf-proxied:false
+_08fa4616a889452f49bd90a34abed0d5.climate-changing.org.	1	IN	CNAME	_863c7b2352825c1264895f12ff99fc2b.wzccmgtwzk.acm-validations.aws. ; cf_tags=cf-proxied:false
+climate-changing.org.	1	IN	CNAME	d6afen5o55kcs.cloudfront.net. ; cf_tags=cf-proxied:false
+www.climate-changing.org.	1	IN	CNAME	d6afen5o55kcs.cloudfront.net. ; cf_tags=cf-proxied:false
 ```
 
-1. Browse to `https://climate-changed.org/`.
+1. Browse to `https://climate-changing.org/`.
 
 ```
-nix-shell -p openjdk25_headless --run 'PORT=9000 java -jar climate-changed-0.1.0-SNAPSHOT-standalone.jar'
+nix-shell -p openjdk25_headless --run 'PORT=9000 java -jar climate-changing-0.1.0-SNAPSHOT-standalone.jar'
 ```
 
 ---

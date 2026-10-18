@@ -1,8 +1,8 @@
 #!/usr/bin/env bb
-;; Analyze climate-changed systemd logs over SSH.
+;; Analyze climate-changing systemd logs over SSH.
 ;;
 ;; Pulls the request-logging lines emitted by `wrap-request-logging`
-;; (logger "climate-changed.http") out of journalctl on the prod host and
+;; (logger "climate-changing.http") out of journalctl on the prod host and
 ;; computes some meaningful operational metrics: traffic, errors, latency
 ;; (the "golden signals") plus IP-address and endpoint usage.
 ;;
@@ -17,7 +17,7 @@
 ;; The log line format produced by the middleware is:
 ;;   <IP> <METHOD> <TARGET> -> <STATUS> (<N> ms)[ <error message>]
 ;; wrapped by logback as:
-;;   HH:mm:ss.SSS [thread] LEVEL climate-changed.http -- <message>
+;;   HH:mm:ss.SSS [thread] LEVEL climate-changing.http -- <message>
 
 (require '[babashka.process :as p]
          '[clojure.string :as str])
@@ -64,7 +64,7 @@
       (binding [*out* *err*] (println "ssh failed:" err))
       (System/exit 1))
     (->> (str/split-lines out)
-         (filter #(and (str/includes? % "climate-changed.http --")
+         (filter #(and (str/includes? % "climate-changing.http --")
                        (str/includes? % " -> ")))
          (keep parse-line))))
 
@@ -156,7 +156,7 @@
       (println "usage: analyze-logs.clj <ssh-target> [--since \"<since>\"] [--top N]"))
     (System/exit 2))
 
-  (println (format "==> Fetching climate-changed.http logs from %s (since: %s)" ssh-target since))
+  (println (format "==> Fetching climate-changing.http logs from %s (since: %s)" ssh-target since))
   (let [reqs (fetch-logs ssh-target since)]
     (if (empty? reqs)
       (println "No request log lines found for the given window.")

@@ -1,0 +1,218 @@
+(ns climate-changing.frontend.app
+  "Core app logic: location data loading fns and  views."
+  (:require
+   [bidi.bidi :as bidi]
+   [climate-changing.common :as common]
+   [climate-changing.era5.grid :as grid]
+   [climate-changing.era5.variables :as vars]
+   [climate-changing.frontend.charts :as charts]
+   [climate-changing.frontend.interactive-map :as imap]
+   [climate-changing.frontend.search :as search]
+   [climate-changing.frontend.state :as state]
+   [climate-changing.frontend.units :as u]
+   [climate-changing.routes :as routes]
+   [cljs.reader :as reader]
+   [clojure.string :as str]))
+
+(defn feature->loc
+  "Convert a keywordized GeoJSON feature into the flat location map used
+  throughout the client:
+  {:id :name :longitude :latitude :country :region :featurecla :population}."
+  [{:keys [id geometry properties]}]
+  (let [[lon lat] (:coordinates geometry)]
+    {:id         id
+     :name       (:name properties)
+     :longitude  lon
+     :latitude   lat
+     :country    (:adm0name properties)
+     :region     (:adm1name properties)
+     :featurecla (:featurecla properties)
+     :population (:pop_max properties)}))
+
+(defn fetch-locations!
+  "Hit the locations API, parse the GeoJSON body, reset `all-locations`
+  and update `state` accordingly."
+  []
+  (swap! state/state assoc :loading-locations? true :error nil :message nil)
+  (-> (js/fetch (bidi/path-for routes/routes :locations))
+      (.then (fn [resp] (.json resp)))
+      (.then (fn [^js geojson]
+               (swap! state/state assoc :all-locations
+                      (mapv feature->loc (:features (js->clj geojson :keywordize-keys true))))
+               (swap! state/state assoc :loading-locations? false)))
+      (.catch (fn [err]
+                (swap! state/state assoc :loading-locations? false :error (str err))))))
+(comment
+  (fetch-locations!))
+
+(defn fetch-location-stats!
+  "Fetch location-index stats from the :location-stats route and stash them in
+  state. The response is EDN, so it is read with cljs.reader."
+  []
+  (-> (js/fetch (bidi/path-for routes/routes :location-stats))
+      (.then (fn [resp]
+               (if (.-ok resp)
+                 (.text resp)
+                 (throw (js/Error. (str "HTTP " (.-status resp)))))))
+      (.then (fn [txt] (reader/read-string txt)))
+      (.then (fn [stats]
+               (swap! state/state assoc :location-stats stats)))
+      (.catch (fn [err]
+                (swap! state/state assoc :location-stats {:error (str err)})))))
+
+(defn fetch-era5-summary!
+  "Snap `loc` to the ERA5 grid and fetch that cell's climate summary into
+  the `:era5-summary` key of the shared state atom."
+  [{:keys [longitude latitude] :as loc}]
+  (let [{:keys [row col]} (grid/snap-coords longitude latitude)]
+    (swap! state/state assoc :era5-summary {:loading? true})
+    (-> (js/fetch (bidi/path-for routes/routes :era5-summary :row row :col col))
+        (.then (fn [resp]
+                 (if (.-ok resp)
+                   (.json resp)
+                   (throw (js/Error. (str "HTTP " (.-status resp)))))))
+        (.then (fn [^js data]
+                 (when (= loc (:selected-location @state/state))
+                   (swap! state/state assoc :era5-summary (js->clj data :keywordize-keys true)))))
+        ;; A selection likely triggered a backfill fetch for its cell, so
+        ;; refresh the indexed-locations count once the summary resolves.
+        (.then (fn [_] (fetch-location-stats!)))
+        (.catch (fn [err]
+                  (when (= loc (:selected-location @state/state))
+                    (swap! state/state assoc :era5-summary {:error (str err)})))))))
+
+(defn fetch-era5-means!
+  "Snap `loc` to the ERA5 grid and fetch that cell's per-decade mean
+  temperature into the `:era5-means` key of the shared state atom."
+  [{:keys [longitude latitude] :as loc}]
+  (let [{:keys [row col]} (grid/snap-coords longitude latitude)]
+    (swap! state/state assoc :era5-means {:loading? true})
+    (-> (js/fetch (bidi/path-for routes/routes :era5-means :row row :col col))
+        (.then (fn [resp]
+                 (if (.-ok resp)
+                   (.json resp)
+                   (throw (js/Error. (str "HTTP " (.-status resp)))))))
+        (.then (fn [^js data]
+                 (when (= loc (:selected-location @state/state))
+                   (swap! state/state assoc :era5-means (js->clj data :keywordize-keys true)))))
+        (.catch (fn [err]
+                  (when (= loc (:selected-location @state/state))
+                    (swap! state/state assoc :era5-means {:error (str err)})))))))
+
+(defonce era5-summary-watch
+  ;; Whenever the selected location changes, (re)load the ERA5 summary and then
+  ;; its per-decade means for the snapped grid cell; clear both on deselection.
+  ;; The means request is chained after the summary so a cold cell is fetched
+  ;; once rather than both endpoints racing `ensure-ts!` (and one getting 423).
+  (add-watch state/state :era5-summary
+             (fn [_ _ old new]
+               (let [loc (:selected-location new)]
+                 (when (not= (:selected-location old) loc)
+                   (if (and loc (:longitude loc) (:latitude loc))
+                     (do
+                       (swap! state/state assoc :era5-summary {:loading? true}
+                              :era5-means {:loading? true})
+                       (-> (fetch-era5-summary! loc)
+                           (.then (fn [_]
+                                    (when (= loc (:selected-location @state/state))
+                                      (fetch-era5-means! loc))))))
+                     (swap! state/state assoc :era5-summary nil :era5-means nil)))))))
+
+(comment
+  era5-summary-watch)
+
+(defn- fmt-coord [x]
+  (.toFixed x 2))
+
+(defn- fmt-population
+  "Render a population count with thousands separators, e.g. 1234567 -> \"1,234,567\"."
+  [pop]
+  (-> (str (js/Math.round pop))
+      (.replace (js/RegExp. "\\B(?=(\\d{3})+(?!\\d))" "g") ",")))
+
+(defn selected-location-view
+  "Render the currently selected location as a small labeled card instead of
+  dumping raw EDN."
+  []
+  (let [{:keys [name country region featurecla population] :as loc}
+        (:selected-location @state/state)
+        ;; Build a "Region, Country" subtitle, dropping blank/nil parts.
+        place (->> [region country]
+                   (remove (fn [s] (or (nil? s) (= "" s))))
+                   (str/join ", "))]
+    [:div {:class "dataview"}
+     (if (nil? loc)
+       [:p {:class "summary-hint"} "No location selected"]
+       [:div {:class "location-card"}
+        [:h3 {:class "location-name"} (or name "Unnamed location")]
+        (when (not= "" place)
+          [:p {:class "location-place"} place])
+        (when (and featurecla (not= "" featurecla))
+          [:p {:class "location-featurecla"} featurecla])
+        (when (and population (pos? population))
+          [:p {:class "location-population"}
+           (str "Population: " (fmt-population population))])])]))
+
+(defn era5-summary-view []
+  (let [{:keys [era5-summary era5-means temp-unit]} @state/state
+        s era5-summary
+        m era5-means]
+    [:div {:class "era5-summary"}
+     (cond
+       (or (nil? s) (nil? m))
+       [:p {:class "summary-hint"} "Click a location to load its climate summary"]
+
+       (or (:loading? s) (:loading? m))
+       [:p {:class "summary-hint"} "Loading climate summary…"]
+
+       (or (:error s) (:error m))
+       [:p {:class "error"} (or (:error s) (:error m))]
+
+       :else
+       [:div {:class "dataview"}
+        [:p {:class "summary-title"}
+         (str (get-in vars/era5-variables [(keyword (:var s)) :name] (:var s))
+              ", lat: " (fmt-coord (:lat s)) "°, long: " (fmt-coord (:lon s)) "°")]
+        [charts/summary-facts s m temp-unit]
+        [charts/temperature-heatmap s m]])]))
+
+(defn temp-unit-toggle
+  "Segmented °C/°F control in the header. The heatmap stays on Celsius with
+  Fahrenheit reference labels; the toggle drives the temperature readouts in
+  the summary facts (see climate-changing.frontend.units)."
+  []
+  (let [unit (:temp-unit @state/state)]
+    [:div {:class "temp-unit-toggle" :role "group" :aria-label "Temperature units"}
+     (for [u [:c :f]]
+       [:button {:key      u
+                 :class    (when (= unit u) "active")
+                 :on-click #(swap! state/state assoc :temp-unit u)}
+        (u/temp-unit-symbol u)])]))
+
+(defn app
+  "Markup for the main application div, top level layout"
+  []
+  (let [{:keys [loading-locations? message error]} @state/state]
+    [:div
+     [:header {:class "app-header"}
+      [:a {:class "app-title-link" :href "/"}
+       [:h1 {:class "app-title"} common/appname]]
+      [:div {:class "header-right"}
+       (let [{:keys [n complete error]} (:location-stats @state/state)]
+         [:span {:class "status"}
+          (cond
+            loading-locations? "Loading…"
+            error              nil
+            (and n (pos? n))
+            (if (= n complete)
+              (str n " locations indexed")
+              (str complete " of " n " locations indexed"))
+            :else nil)])
+       [temp-unit-toggle]]]
+     [:div {:class "side-panel"}
+      [search/location-typeahead]
+      [selected-location-view]
+      [era5-summary-view]
+      (when message [:p {:class "message"} message])
+      (when error   [:p {:class "error"} error])]
+     [imap/locations-map]]))

@@ -1,4 +1,4 @@
-`climate-changed` is a Clojure and ClojureScript full-stack web application.
+`climate-changing` is a Clojure and ClojureScript full-stack web application.
 
 `infra/` is the NixOS and terraform configuration for production.
 
