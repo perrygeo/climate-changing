@@ -16,15 +16,14 @@
 (def ^:private s2cloudless-max-zoom 18)
 
 (def satellite-style
-  ; A Sentinel-2 cloudless raster basemap proxied through the `:tiles-s2cloudless` route.
+  ; A Sentinel-2 cloudless raster basemap served directly from tiles.perrygeo.com.
   {:version 8
    :glyphs  "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf"
    :sources {:satellite {:type        "raster"
-                         :tiles       [(bidi/path-for routes/routes :tiles-s2cloudless
-                                                      :z "{z}" :y "{y}" :x "{x}")]
+                         :tiles       ["https://tiles.perrygeo.com/s2cloudless/{z}/{x}/{y}"]
                          :tile-size   256
                          :maxzoom     s2cloudless-max-zoom
-                         :attribution "Sentinel-2 cloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data)"}}
+                         :attribution "Sentinel-2 cloudless 2020 © EOX (CC BY-NC-SA 4.0)"}}
    :layers  [{:id     "satellite"
               :type   "raster"
               :source "satellite"}]})
