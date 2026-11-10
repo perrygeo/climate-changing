@@ -135,7 +135,7 @@ in
     wants = [ "network-online.target" ];
     requires = [ "zerofs-secret.service" ];
     serviceConfig = {
-      ExecStart = "${lib.getExe pkgs.zerofs} run --config /etc/zerofs/zerofs.toml";
+      ExecStart = "${lib.getExe pkgs.zerofs} run --no-compactor --config /etc/zerofs/zerofs.toml";
       EnvironmentFile = "-/run/zerofs-secret/zerofs.env";
       Restart = "always";
       RestartSec = 5;
