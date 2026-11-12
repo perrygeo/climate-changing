@@ -11,14 +11,12 @@
 ########################################
 
 resource "terraform_data" "nixos_rebuild" {
-  # The ZeroFS encryption password (and the permission to read it) must exist
-  # before the rebuild, otherwise the freshly-started zerofs-secret.service has
-  # nothing to fetch on first boot.
+  # The era_ts data volume must be attached before the rebuild so the ext4
+  # filesystem can be created/mounted on first boot (see configuration.nix).
   depends_on = [
     aws_instance.app,
     aws_eip_association.app,
-    aws_ssm_parameter.zerofs_password,
-    aws_iam_role_policy.ssm_get_parameter,
+    aws_volume_attachment.data,
   ]
 
   triggers_replace = {

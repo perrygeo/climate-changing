@@ -18,6 +18,9 @@ ssh_allowed_cidr = "203.0.113.7/32"
 # Must be globally unique across all of S3.
 data_bucket_name = "climate-changed-timeseries"
 
+# Size (GB) of the era_ts EBS data volume mounted at /var/lib/climate-changed/era_ts.
+data_volume_size = 100
+
 # Leave false for the bootstrap apply so you get a working *.cloudfront.net URL.
 # Then set this to true (with domain_name) to request the ACM cert; the apply
 # pauses until you add the DNS validation record (see infra/README.md Step 2).

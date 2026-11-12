@@ -65,6 +65,12 @@ variable "data_bucket_name" {
   default     = "climate-changed-timeseries"
 }
 
+variable "data_volume_size" {
+  description = "Size (GB) of the era_ts EBS data volume mounted at /var/lib/climate-changed/era_ts."
+  type        = number
+  default     = 100
+}
+
 variable "domain_name" {
   description = "Custom domain to serve the app from."
   type        = string
